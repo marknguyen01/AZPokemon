@@ -16,19 +16,32 @@ app.use(morgan('tiny'));
 app.use(cors());
 app.use(bodyParser.json());
 
+const port = process.env.NODE_ENV === 'development' ? (process.env.PORT || 80) : 443;
 
+if(process.env.NODE_ENV === "development") {
+  http.createServer(app).listen(port, () => {
+    console.log('Development server started on port ' + port)
+  });
+}
+else {
+  https.createServer({
+    key: fs.readFileSync('key.pem'), 
+    cert: fs.readFileSync('cert.pem'),
+    passphrase: 'N0p4ssword!',
+  }, app).listen(port, () => {
+      console.log('Server started on port ' + port)
+  });
+}
 
-if(process.env.MODE_ENV === "development") http.createServer(app).listen(80);
-else https.createServer({
-  key: fs.readFileSync('key.pem'), 
-  cert: fs.readFileSync('cert.pem'),
-  passphrase: 'N0p4ssword!',
-}, app).listen(443);
-
-
-app.get('/api/*', async (req, res) => {
-  let api = await getAPI(req.params);
-  res.json(api);
+app.get('/api/pokemon/search/:pokemonName', async (req, res) => {
+  let api = await getAPI(['pokemon/?limit=1118']);
+  let pokemonName = await req.params.pokemonName;
+  let results = [];
+  for(i = 0; i < api.results.length; i++) {
+    if(new RegExp(pokemonName.toLowerCase()).test(api.results[i]['name']))
+      results.push(api.results[i]);
+  }
+  res.json(results);
 });
 
 function getAPI(req) {
@@ -39,10 +52,8 @@ function getAPI(req) {
       },
   }).catch(err => console.error(err)).then(res => {
     if(res.ok && res.statusCode != 404) return res.json();
-    else throw new Error('Something went wrong');  
+    else throw new Error('Something went wrong not 404');  
   }).catch((err) => {
     return new Error('Something went wrong');
   });
 }
-
-
