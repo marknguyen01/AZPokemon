@@ -33,15 +33,23 @@ else {
   });
 }
 
+
 app.get('/api/pokemon/search/:pokemonName', async (req, res) => {
+  let pokemonName = req.params.pokemonName;
   let api = await getAPI(['pokemon/?limit=1118']);
-  let pokemonName = await req.params.pokemonName;
   let results = [];
+  if(api.results.length > 0)
   for(i = 0; i < api.results.length; i++) {
     if(new RegExp(pokemonName.toLowerCase()).test(api.results[i]['name']))
       results.push(api.results[i]);
   }
   res.json(results);
+});
+
+app.get('/api/pokemon/:pokemonName', async (req, res) => {
+  let pokemonName = req.params.pokemonName;
+  let api = await getAPI(['pokemon/' + pokemonName]);
+  res.json(api);
 });
 
 function getAPI(req) {
